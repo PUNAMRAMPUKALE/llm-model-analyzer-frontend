@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+
+html, body { background: theme('colors.bg'); color: theme('colors.ink'); }
+
+.container-page { @apply max-w-7xl mx-auto p-6; }
+.card { @apply rounded-2xl bg-card border border-stroke/60 shadow-card; }
+.btn { @apply inline-flex items-center justify-center gap-2 rounded-xl border border-stroke/60 px-4 py-2 hover:shadow-glow active:scale-[0.99] transition; }
+.btn-primary { @apply bg-accent hover:bg-accent/90; }
+.input, .textarea { @apply w-full rounded-xl bg-transparent border border-stroke/60 focus:border-accent outline-none px-3 py-2; }
+.label { @apply text-sm text-mute; }
+.token { @apply text-xs px-2 py-1 rounded-full bg-stroke/60; }
