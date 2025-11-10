@@ -1,3 +1,4 @@
+// frontend/src/services/api.ts
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -46,6 +47,8 @@ export type GridSpec = {
   top_p?: number[];
   top_k?: number[];
   max_tokens?: number[];
+  presence_penalty?: number[];
+  frequency_penalty?: number[];
   samples?: number;
   seed?: number | null;
 };
@@ -63,6 +66,8 @@ function sanitizeGrid(input: any): GridSpec {
   if (Array.isArray(input.top_p)) out.top_p = input.top_p;
   if (Array.isArray(input.top_k)) out.top_k = input.top_k;
   if (Array.isArray(input.max_tokens)) out.max_tokens = input.max_tokens;
+  if (Array.isArray(input.presence_penalty)) out.presence_penalty = input.presence_penalty;
+  if (Array.isArray(input.frequency_penalty)) out.frequency_penalty = input.frequency_penalty;
   if (typeof input.samples === "number") out.samples = input.samples;
   if (typeof input.seed === "number" || input?.seed === null) out.seed = input.seed;
   return out;
@@ -71,7 +76,6 @@ function sanitizeGrid(input: any): GridSpec {
 /* ----------------------- Plain function endpoints ------------------------ */
 
 export async function createExperiment(body: CreateExperimentBody): Promise<Experiment> {
-  // body.gridSpec should already be clean (constructed by our UI), but keep it safe.
   const payload: CreateExperimentBody = { ...body, gridSpec: sanitizeGrid(body.gridSpec) };
   return postJSON<Experiment, CreateExperimentBody>("/experiments", payload);
 }
@@ -137,10 +141,11 @@ export function useMetrics(
   return useQuery<MetricRow[]>({
     queryKey: ["metrics", id, opts.cursor ?? null, opts.limit ?? 50],
     queryFn: async () => {
-      const page = await getJSON<Page<MetricRow>>(
+      // Backend returns a FLAT ARRAY for /metrics; also handle Page just in case
+      const res = await getJSON<MetricRow[] | Page<MetricRow>>(
         `/experiments/${id}/metrics${buildCursor(opts.cursor, opts.limit)}`
       );
-      return page?.data ?? [];
+      return Array.isArray(res) ? res : (res?.data ?? []);
     },
     enabled: !!id && (opts.enabled ?? true),
     placeholderData: keepPrev,

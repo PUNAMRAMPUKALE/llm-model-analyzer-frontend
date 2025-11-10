@@ -7,13 +7,20 @@ import { useCreateExperiment } from "@/services/api";
 
 const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
 
+/**
+ * Updated defaults:
+ * - temperature: 0.8,1.0  (more randomness)
+ * - top_p:       0.9,0.97 (allow diverse token sampling)
+ * - samples:     2        (two variants per combo)
+ * - prompt:      asks for 50+ lines and varied angles
+ */
 const schema = z.object({
   title: z.string().min(2),
   prompt: z.string().min(5),
   model: z.string().min(1),
-  temperature: z.string().default("0.0,0.3,0.6,0.9"),
-  top_p: z.string().default("0.7,0.9"),
-  samples: z.coerce.number().min(1).max(5).default(1),
+  temperature: z.string().default("0.8,1.0"),
+  top_p: z.string().default("0.9,0.97"),
+  samples: z.coerce.number().min(1).max(5).default(2),
 });
 
 export function NewExperimentForm() {
@@ -22,11 +29,13 @@ export function NewExperimentForm() {
     resolver: zodResolver(schema),
     defaultValues: {
       title: "Studio Smoke",
-      prompt: "Explain temperature and top_p in 3 bullets.",
+      prompt:
+        "Write a thorough, structured answer of at least 50 lines with section headers, bullets, examples, and contrasts. " +
+        "Cover multiple distinct angles (theory-heavy, project-heavy, and industry-ready) and avoid repeating the same phrasing across sections.",
       model: DEFAULT_GROQ_MODEL, // ✅ Groq by default
-      temperature: "0.0,0.3,0.6,0.9",
-      top_p: "0.7,0.9",
-      samples: 1,
+      temperature: "0.8,1.0",
+      top_p: "0.9,0.97",
+      samples: 2,
     },
   });
 
@@ -69,11 +78,11 @@ export function NewExperimentForm() {
         </div>
         <div className="space-y-1">
           <label className="label">temperature (csv)</label>
-          <input className="input" placeholder="0.0,0.3,0.6,0.9" {...register("temperature")} />
+          <input className="input" placeholder="0.8,1.0" {...register("temperature")} />
         </div>
         <div className="space-y-1">
           <label className="label">top_p (csv)</label>
-          <input className="input" placeholder="0.7,0.9" {...register("top_p")} />
+          <input className="input" placeholder="0.9,0.97" {...register("top_p")} />
         </div>
       </div>
 

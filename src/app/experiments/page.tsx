@@ -2,8 +2,6 @@
 
 import { useParams } from 'next/navigation';
 import { useExperiment, useMetrics, useResponses } from '@/services/api';
-import MetricsRadar from '@/components/charts/MetricsRadar';
-import TokensLatencyChart from '@/components/charts/TokensLatencyChart';
 import { RunAction } from '@/components/experiments/RunAction';
 
 export default function ExperimentDetail() {
@@ -41,20 +39,6 @@ export default function ExperimentDetail() {
             <h2 className="font-medium mb-2">Parameter Grid (initial)</h2>
             <pre className="text-sm">{JSON.stringify(exp.gridSpec, null, 2)}</pre>
           </div>
-        </div>
-
-        {/* Metrics Overview */}
-        {metrics.length > 0 ? (
-          <MetricsRadar metrics={metrics} />
-        ) : (
-          <div className="rounded-xl border border-zinc-800/70 bg-zinc-950 p-4 text-sm text-zinc-400">
-            No metrics yet.
-          </div>
-        )}
-
-        {/* Tokens & Latency */}
-        <div className="card p-4">
-          <TokensLatencyChart rows={responses} />
         </div>
 
         {/* Responses */}

@@ -1,3 +1,4 @@
+// frontend/src/components/console/PromptRunner.tsx
 "use client";
 
 import { useState } from "react";
@@ -10,25 +11,50 @@ const MODELS = [
   { id: "llama-3.1-8b-instant", label: "Groq: LLaMA-3.1-8B Instant" },
 ];
 
+type Preset = "det" | "bal" | "cre" | "expl" | "strong";
+
 export default function PromptRunner() {
   const router = useRouter();
-  const [prompt, setPrompt] = useState("Give me 3 course suggestions for a CS beginner.");
+  const [prompt, setPrompt] = useState(
+    "Give me 3 course suggestions for a CS beginner."
+  );
   const [model, setModel] = useState(MODELS[0].id);
-  const [preset, setPreset] = useState<"det"|"bal"|"cre"|"expl">("bal");
+  const [preset, setPreset] = useState<Preset>("bal");
 
   const createMut = useMutation({ mutationFn: createExperiment });
 
-  const gridByPreset = {
-    det: { temperature: [0.1], top_p: [0.8], samples: 1 },
-    bal: { temperature: [0.6], top_p: [0.9], samples: 1 },
-    cre: { temperature: [0.9], top_p: [0.95], samples: 1 },
-    expl: { temperature: [0.3, 0.9], top_p: [0.8, 0.95], samples: 1 },
-  }[preset];
+  // 🔵 New STRONG preset: very low randomness, long output, fixed seed
+  const gridByPreset =
+    {
+      det:   { temperature: [0.1], top_p: [0.8], samples: 1 },
+      bal:   { temperature: [0.6], top_p: [0.9], samples: 1 },
+      cre:   { temperature: [0.9], top_p: [0.95], samples: 1 },
+      expl:  { temperature: [0.3, 0.9], top_p: [0.8, 0.95], samples: 1 },
+      strong:{ temperature: [0.1], top_p: [0.7], max_tokens: [3500], seed: 42, samples: 1 },
+    }[preset];
+
+  // For the STRONG preset, we append a strict formatter that demands ≥400 lines
+  function buildPrompt(): string {
+    if (preset !== "strong") return prompt;
+    return (
+      prompt +
+      "\n\n" +
+      [
+        "### STRICT FORMAT FOR STRONG SHOWCASE",
+        "- Produce **at least 400 lines** in total.",
+        "- Use clear numbered section headings (H1..H3).",
+        "- Each section must include bullet lists and short paragraphs.",
+        "- No fluff repetition; keep sentences cohesive with smooth transitions.",
+        "- Keep topic focused; avoid drifting.",
+        "- Use consistent terminology across the whole response."
+      ].join("\n")
+    );
+  }
 
   async function onRun() {
     const exp = await createMut.mutateAsync({
-      title: "Quick Run",
-      prompt,
+      title: `Quick Run ${new Date().toLocaleTimeString()}`,
+      prompt: buildPrompt(),
       model,
       gridSpec: gridByPreset,
     });
@@ -41,7 +67,7 @@ export default function PromptRunner() {
       <div className="mb-2 text-sm font-medium text-zinc-200">Prompt</div>
       <textarea
         className="w-full rounded-xl bg-zinc-900/60 p-3 text-sm outline-none ring-1 ring-zinc-800 focus:ring-indigo-500"
-        rows={5}
+        rows={6}
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
       />
@@ -53,23 +79,29 @@ export default function PromptRunner() {
           onChange={(e) => setModel(e.target.value)}
         >
           {MODELS.map((m) => (
-            <option key={m.id} value={m.id}>{m.label}</option>
+            <option key={m.id} value={m.id}>
+              {m.label}
+            </option>
           ))}
         </select>
 
-        <div className="flex items-center gap-2">
-          <PresetButton active={preset==="det"} onClick={()=>setPreset("det")} label="Deterministic" />
-          <PresetButton active={preset==="bal"} onClick={()=>setPreset("bal")} label="Balanced" />
-          <PresetButton active={preset==="cre"} onClick={()=>setPreset("cre")} label="Creative" />
-          <PresetButton active={preset==="expl"} onClick={()=>setPreset("expl")} label="Explore" />
+        <div className="flex flex-wrap items-center gap-2">
+          <PresetButton active={preset === "det"}    onClick={() => setPreset("det")}    label="Deterministic" />
+          <PresetButton active={preset === "bal"}    onClick={() => setPreset("bal")}    label="Balanced" />
+          <PresetButton active={preset === "cre"}    onClick={() => setPreset("cre")}    label="Creative" />
+          <PresetButton active={preset === "expl"}   onClick={() => setPreset("expl")}   label="Explore (2×2)" />
+          {/* 🔵 New button */}
+          <PresetButton active={preset === "strong"} onClick={() => setPreset("strong")} label="Strong (showcase)" />
         </div>
       </div>
 
       <div className="mt-3 flex items-center justify-between">
         <div className="text-xs text-zinc-400">
           {preset === "expl"
-            ? "Runs a 2×2 grid to compare styles."
-            : "One run with the selected style."}
+            ? "Variety grid (T/top_p) to compare styles."
+            : preset === "strong"
+            ? "Low entropy + long output (≥400 lines) for maximum coherence/structure."
+            : "Single style run."}
         </div>
         <button
           onClick={onRun}
@@ -86,7 +118,15 @@ export default function PromptRunner() {
   );
 }
 
-function PresetButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+function PresetButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}

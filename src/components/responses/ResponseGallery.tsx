@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ResponseRow } from "@/types/domain";
+import type { ResponseRow, MetricRow } from "@/types/domain";
+import QualityInspector from "@/components/analysis/QualityInspector";
 
 type Props = {
   responses: ResponseRow[] | undefined;
   loading?: boolean;
+  metrics?: MetricRow[];
 };
 
 function Chip({ label }: { label: string }) {
@@ -16,7 +18,7 @@ function Chip({ label }: { label: string }) {
   );
 }
 
-export default function ResponseGallery({ responses, loading }: Props) {
+export default function ResponseGallery({ responses, loading, metrics }: Props) {
   const [selected, setSelected] = useState<ResponseRow | null>(null);
   const items = useMemo(() => (Array.isArray(responses) ? responses : []), [responses]);
 
@@ -49,7 +51,6 @@ export default function ResponseGallery({ responses, loading }: Props) {
           const p = (r.params as any) ?? {};
           const T = p.temperature ?? "—";
           const P = p.top_p ?? "—";
-          const K = p.top_k;
           const tokensIn = r.tokensIn ?? 0;
           const tokensOut = r.tokensOut ?? 0;
 
@@ -67,7 +68,6 @@ export default function ResponseGallery({ responses, loading }: Props) {
               <div className="mb-2 flex flex-wrap gap-1">
                 <Chip label={`T=${T}`} />
                 <Chip label={`p=${P}`} />
-                {K !== undefined && <Chip label={`k=${K}`} />}
                 <Chip label={`in ${tokensIn} / out ${tokensOut}`} />
               </div>
 
@@ -90,7 +90,10 @@ export default function ResponseGallery({ responses, loading }: Props) {
           >
             <div className="mb-3 flex items-start justify-between gap-3">
               <div className="text-sm font-medium text-zinc-200">Response details</div>
-              <button onClick={() => setSelected(null)} className="text-xs text-zinc-400 hover:text-zinc-200">
+              <button
+                onClick={() => setSelected(null)}
+                className="text-xs text-zinc-400 hover:text-zinc-200"
+              >
                 Close
               </button>
             </div>
@@ -98,17 +101,22 @@ export default function ResponseGallery({ responses, loading }: Props) {
             <div className="mb-3 flex flex-wrap gap-2">
               <Chip label={`T=${(selected.params as any)?.temperature ?? "—"}`} />
               <Chip label={`p=${(selected.params as any)?.top_p ?? "—"}`} />
-              {(selected.params as any)?.top_k !== undefined && (
-                <Chip label={`k=${(selected.params as any)?.top_k}`} />
-              )}
               <Chip label={`latency ${selected.latencyMs ?? 0} ms`} />
               <Chip label={`in ${selected.tokensIn ?? 0} / out ${selected.tokensOut ?? 0}`} />
             </div>
 
-            {/* Removed selected.metric UI to avoid TS error; can be reintroduced once joined */}
             <pre className="whitespace-pre-wrap rounded-xl bg-zinc-900/60 p-4 text-sm leading-relaxed text-zinc-100">
               {selected.text ?? ""}
             </pre>
+
+            {/* NEW: PDF-required evaluation sections */}
+            <div className="mt-4">
+              <QualityInspector
+                responses={items}
+                metrics={metrics ?? []}
+                focusId={selected.id}
+              />
+            </div>
           </div>
         </div>
       )}

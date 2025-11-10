@@ -2,11 +2,15 @@
 
 import { useParams } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
-import { useExperiment, useResponses, useMetrics, useRunExperiment } from "@/services/api";
-import MetricsRadar from "@/components/charts/MetricsRadar";
-import TokensLatencyChart from "@/components/charts/TokensLatencyChart";
+import {
+  useExperiment,
+  useResponses,
+  useMetrics,
+  useRunExperiment,
+} from "@/services/api";
 import { ParameterDialer } from "@/components/experiments/ParameterDialer";
 import ResponseGallery from "@/components/responses/ResponseGallery";
+import ExportButtons from "../../exports/ExportButtons";
 
 export default function ExperimentDetail() {
   const params = useParams();
@@ -38,10 +42,14 @@ export default function ExperimentDetail() {
 
   return (
     <main className="container-page space-y-6 min-w-0">
+      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{title}</h1>
-          <p className="text-sm text-zinc-400">{gridInfo}</p>
+          <p className="text-sm text-zinc-400">
+            {gridInfo}
+            {exp?.model ? ` • model ${exp.model}` : ""}
+          </p>
         </div>
 
         <button
@@ -53,6 +61,7 @@ export default function ExperimentDetail() {
         </button>
       </div>
 
+      {/* Prompt + Initial Grid */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="card p-4">
           <h2 className="font-medium mb-2">Prompt</h2>
@@ -66,30 +75,41 @@ export default function ExperimentDetail() {
         </div>
       </div>
 
+      {/* Dialer (override) */}
       <ParameterDialer
         experimentId={id}
         initial={exp?.gridSpec as any}
         onChange={(g) => setGridOverride(g)}
       />
 
-      <div className="min-w-0">
-        {metLoading ? (
-          <div className="card p-4 text-sm text-muted-foreground">Scoring…</div>
-        ) : (
-          <MetricsRadar metrics={metrics} />
+      {/* Summary row with export */}
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-zinc-400">
+          {respLoading ? "Loading responses…" : `${responses.length} responses`}
+          {metLoading ? "" : ` • ${metrics.length} metric rows`}
+        </div>
+        {exp && (
+          <ExportButtons
+            experiment={exp as any}
+            responses={responses}
+            metrics={metrics}
+          />
         )}
       </div>
 
-      <div className="min-w-0">
-        <TokensLatencyChart responses={responses} />
-      </div>
-
+      {/* Responses + modal evaluation */}
       <section className="min-w-0">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-medium">Responses</h2>
-          <div className="text-xs text-zinc-400">{Array.isArray(responses) ? responses.length : 0} items</div>
+          <div className="text-xs text-zinc-400">
+            {Array.isArray(responses) ? responses.length : 0} items
+          </div>
         </div>
-        <ResponseGallery responses={responses} loading={respLoading} />
+        <ResponseGallery
+          responses={responses}
+          loading={respLoading}
+          metrics={metrics}
+        />
       </section>
     </main>
   );
