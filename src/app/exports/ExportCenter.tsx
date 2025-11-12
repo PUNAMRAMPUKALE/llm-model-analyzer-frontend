@@ -5,7 +5,7 @@ import { useExperiments } from "@/services/api";
 import type { Experiment, ResponseRow, MetricRow } from "@/types/domain";
 import { fetcher } from "@/lib/fetcher";
 
-/* ---------- Force identical columns across CSVs (matches per-experiment) ---------- */
+/** Keep the same column order across CSVs */
 const COLS = [
   "experimentId",
   "experimentTitle",
@@ -24,7 +24,8 @@ const COLS = [
   "details",
   "isBestFit",
 ] as const;
-type Row = Record<(typeof COLS)[number], any>;
+type Col = (typeof COLS)[number];
+type Row = Record<Col, any>;
 
 const toPST = (iso?: string) =>
   iso
@@ -39,30 +40,30 @@ const toPST = (iso?: string) =>
       }) + " PST"
     : "";
 
-/* Simple CSV with BOM, stable order, safe quoting */
+/** RFC4180-ish CSV with BOM, stable columns, safe quoting */
 function toCSV(rows: Row[]): string {
-  if (!rows.length) return "\uFEFF" + COLS.join(",") + "\n";
   const esc = (x: any) => {
     const s = typeof x === "string" ? x : JSON.stringify(x ?? "");
     return `"${s.replace(/"/g, '""')}"`;
   };
   const head = COLS.join(",");
-  const body = rows.map(r => COLS.map(c => esc(r[c])).join(",")).join("\n");
+  if (!rows.length) return "\uFEFF" + head + "\n";
+  const body = rows.map((r) => COLS.map((c) => esc(r[c])).join(",")).join("\n");
   return "\uFEFF" + head + "\n" + body;
 }
 
+/** Pulls all pages from a cursor endpoint. Works with Page<T> or flat arrays */
 async function fetchAllPages<T>(path: string): Promise<T[]> {
   const out: T[] = [];
-  let cursor: string | undefined = undefined;
+  let cursor: string | undefined;
   while (true) {
     const qs = new URLSearchParams();
     if (cursor) qs.set("cursor", cursor);
-    // use a reasonable page size if your backend supports it
     qs.set("limit", "200");
     const url = `${path}${qs.toString() ? `?${qs.toString()}` : ""}`;
+
     const page = await fetcher<any>(url);
     if (Array.isArray(page)) {
-      // Some endpoints may return a flat array
       out.push(...page);
       break;
     } else if (page?.data) {
@@ -79,38 +80,38 @@ async function fetchAllPages<T>(path: string): Promise<T[]> {
   return out;
 }
 
-function bestFitId(metrics: MetricRow[]) {
+function getBestFitId(metrics: MetricRow[] | undefined) {
   if (!metrics?.length) return undefined;
   return [...metrics]
-    .map(m => ({ id: m.responseId, q: Number(m.overallQuality ?? 0) }))
+    .map((m) => ({ id: m.responseId, q: Number(m.overallQuality ?? 0) }))
     .sort((a, b) => b.q - a.q)[0]?.id;
 }
 
 export default function ExportCenter() {
   const { data: experiments = [], isLoading } = useExperiments();
   const [busy, setBusy] = useState(false);
-  const disabled = isLoading || experiments.length === 0 || busy;
+  const disabled = isLoading || busy || experiments.length === 0;
 
   async function downloadAllDetailedCSV() {
-    try {
-      setBusy(true);
+    if (disabled) return;
 
+    setBusy(true);
+    try {
       const allRows: Row[] = [];
 
       for (const e of experiments as Experiment[]) {
-        // Pull *all* responses & metrics for each experiment (with pagination support)
+        // Pull full data for this experiment
         const [responses, metrics] = await Promise.all([
           fetchAllPages<ResponseRow>(`/experiments/${e.id}/responses`),
           fetchAllPages<MetricRow>(`/experiments/${e.id}/metrics`),
         ]);
 
-        const mBy = new Map(metrics.map(m => [m.responseId, m]));
+        const mBy = new Map(metrics.map((m) => [m.responseId, m]));
+        const bestId = getBestFitId(metrics);
         const createdAtPST = toPST(e.createdAt);
-        const bestId = bestFitId(metrics);
 
         responses.forEach((r, idx) => {
           const m = mBy.get(r.id);
-          // Support both r.text and r.content just in case
           const responseText = (r as any).text ?? (r as any).content ?? "";
 
           const row: Row = {
@@ -140,6 +141,11 @@ export default function ExportCenter() {
         });
       }
 
+      if (allRows.length === 0) {
+        alert("No data to export yet. Create and run an experiment first.");
+        return;
+      }
+
       const csv = toCSV(allRows);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -148,6 +154,9 @@ export default function ExportCenter() {
       a.download = "all-experiments-with-outputs.csv";
       a.click();
       URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Export failed. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -157,28 +166,35 @@ export default function ExportCenter() {
     <main className="container-page space-y-6">
       <h1 className="text-2xl font-semibold flex items-center justify-between">
         <span>Exports</span>
-        <a
-          href="/"
-          className="btn btn-primary px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 transition"
-        >
-          Back to Home
-        </a>
+        <a className="btn btn-primary" href="/">Back to Home</a>
       </h1>
 
-      <div className="card p-4 space-y-3">
-        <p className="text-sm text-mute">
-          Download a combined CSV with <b>inputs</b> (title, prompt, model, PST time) and <b>outputs</b> (response text, tokens, latency, params, metrics) for every experiment.
-        </p>
+      {/* Empty-state guard so we never hit the backend with no data */}
+      {isLoading ? (
+        <div className="text-sm text-zinc-400">Loading…</div>
+      ) : experiments.length === 0 ? (
+        <div className="card p-6 space-y-3">
+          <p className="text-sm text-zinc-400">
+            Nothing to export yet. Create and run an experiment to generate results.
+          </p>
+          <a className="btn btn-primary" href="/experiments">Go to Experiments</a>
+        </div>
+      ) : (
+        <div className="card p-4 space-y-3">
+          <p className="text-sm text-mute">
+            Download a combined CSV with <b>inputs</b> (title, prompt, model, PST time) and <b>outputs</b> (response text, tokens, latency, params, metrics) for every experiment.
+          </p>
 
-        <button
-          className="btn btn-primary"
-          disabled={disabled}
-          onClick={downloadAllDetailedCSV}
-          title={disabled ? "No experiments or still preparing…" : "Export all results with outputs"}
-        >
-          {busy ? "Preparing…" : "Download All Results CSV"}
-        </button>
-      </div>
+          <button
+            className="btn btn-primary"
+            disabled={disabled}
+            onClick={downloadAllDetailedCSV}
+            title={disabled ? "No experiments or still preparing…" : "Export all results with outputs"}
+          >
+            {busy ? "Preparing…" : "Download All Results CSV"}
+          </button>
+        </div>
+      )}
     </main>
   );
 }
