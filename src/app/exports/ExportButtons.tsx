@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { Experiment, ResponseRow, MetricRow } from "@/types/domain";
 
+/* ---------- CSV helper (quotes + newlines safe) ---------- */
 function toCSV(rows: any[]): string {
   if (!rows.length) return "";
   const headers = Array.from(
@@ -10,11 +11,32 @@ function toCSV(rows: any[]): string {
   );
   const esc = (x: any) => {
     const v = typeof x === "string" ? x : JSON.stringify(x ?? "");
-    return `"${v.replace(/"/g, '""')}"`;
+    return `"${String(v).replace(/"/g, '""')}"`;
   };
   const lines = [headers.join(",")];
   for (const row of rows) lines.push(headers.map(h => esc((row as any)[h])).join(","));
   return lines.join("\n");
+}
+
+const toPST = (iso?: string) =>
+  iso
+    ? new Date(iso).toLocaleString("en-US", {
+        timeZone: "America/Los_Angeles",
+        hour12: true,
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }) + " PST"
+    : "";
+
+/* pick the best response id by highest overallQuality */
+function bestFitId(metrics: MetricRow[]) {
+  if (!metrics?.length) return undefined;
+  return [...metrics]
+    .map(m => ({ id: m.responseId, q: Number(m.overallQuality ?? 0) }))
+    .sort((a, b) => b.q - a.q)[0]?.id;
 }
 
 export default function ExportButtons({
@@ -26,38 +48,71 @@ export default function ExportButtons({
   responses: ResponseRow[];
   metrics: MetricRow[];
 }) {
-  const joined = useMemo(() => {
+  const bestId = useMemo(() => bestFitId(metrics || []), [metrics]);
+
+  // ✅ Symmetric, complete rows: includes INPUT (prompt/model/time) + OUTPUT (full response text)
+  const rows = useMemo(() => {
     const mBy = new Map(metrics.map(m => [m.responseId, m]));
-    return responses.map(r => ({
-      responseId: r.id,
-      text: r.text,
-      latencyMs: r.latencyMs,
-      tokensIn: r.tokensIn,
-      tokensOut: r.tokensOut,
-      params: r.params,
-      overallQuality: mBy.get(r.id)?.overallQuality ?? null,
-      scores: mBy.get(r.id)?.scores ?? {},
-      details: mBy.get(r.id)?.details ?? {},
-    }));
-  }, [responses, metrics]);
+    const createdAtPST = toPST(experiment.createdAt);
 
-  const jsonBlob = () => URL.createObjectURL(new Blob([JSON.stringify({
-    experiment, results: joined,
-  }, null, 2)], { type: "application/json" }));
+    return responses.map((r, idx) => {
+      const m = mBy.get(r.id);
+      return {
+        /* INPUT (experiment) */
+        experimentId: experiment.id,
+        experimentTitle: experiment.title,
+        experimentPrompt: experiment.prompt,          // ✅ full input prompt
+        model: experiment.model,
+        experimentCreatedAtPST: createdAtPST,
 
-  const csvBlob = () => {
-    const flat = joined.map(j => ({
-      responseId: j.responseId,
-      latencyMs: j.latencyMs,
-      tokensIn: j.tokensIn,
-      tokensOut: j.tokensOut,
-      params: j.params,
-      overallQuality: j.overallQuality,
-      scores: j.scores,
-      text: j.text,
-    }));
-    return URL.createObjectURL(new Blob([toCSV(flat)], { type: "text/csv" }));
-  };
+        /* RESPONSE (OUTPUT) */
+        responseIndex: idx + 1,
+        responseId: r.id,
+        responseText: r.text ?? "",                   // ✅ full output text
+        latencyMs: r.latencyMs ?? "",
+        tokensIn: r.tokensIn ?? "",
+        tokensOut: r.tokensOut ?? "",
+        params: r.params ?? {},
+
+        /* METRICS */
+        overallQuality: m?.overallQuality ?? "",
+        scores: m?.scores ?? {},
+        details: m?.details ?? {},
+
+        /* FLAGS */
+        isBestFit: r.id === bestId,
+      };
+    });
+  }, [experiment, responses, metrics, bestId]);
+
+  const jsonBlob = () =>
+    URL.createObjectURL(
+      new Blob(
+        [
+          JSON.stringify(
+            {
+              exportType: "per-experiment",
+              experiment: {
+                id: experiment.id,
+                title: experiment.title,
+                prompt: experiment.prompt,             // ✅ in JSON too
+                model: experiment.model,
+                createdAtPST: toPST(experiment.createdAt),
+              },
+              results: rows,                           // CSV + JSON share same row shape
+            },
+            null,
+            2
+          ),
+        ],
+        { type: "application/json" }
+      )
+    );
+
+  const csvBlob = () =>
+    URL.createObjectURL(
+      new Blob([toCSV(rows)], { type: "text/csv;charset=utf-8" })
+    );
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -76,7 +131,7 @@ export default function ExportButtons({
         Export CSV
       </a>
       <button
-        onClick={() => window.print()} // simple, reliable PDF via browser print dialog
+        onClick={() => window.print()}
         className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-100 hover:bg-zinc-700"
       >
         Print / Save as PDF

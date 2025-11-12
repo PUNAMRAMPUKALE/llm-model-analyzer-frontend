@@ -13,3 +13,6 @@ html, body { background: theme('colors.bg'); color: theme('colors.ink'); }
 .input, .textarea { @apply w-full rounded-xl bg-transparent border border-stroke/60 focus:border-accent outline-none px-3 py-2; }
 .label { @apply text-sm text-mute; }
 .token { @apply text-xs px-2 py-1 rounded-full bg-stroke/60; }
+/* Subtle hover focus aids across the app */
+.card:hover { box-shadow: 0 0 0 1px rgba(91,140,255,0.25), 0 10px 30px rgba(2,6,23,0.35); }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(91,140,255,0.45); }

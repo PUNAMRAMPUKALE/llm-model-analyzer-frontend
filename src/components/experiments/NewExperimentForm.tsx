@@ -27,16 +27,15 @@ export function NewExperimentForm() {
   const { mutateAsync, isPending } = useCreateExperiment();
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: {
-      title: "Studio Smoke",
-      prompt:
-        "Write a thorough, structured answer of at least 50 lines with section headers, bullets, examples, and contrasts. " +
-        "Cover multiple distinct angles (theory-heavy, project-heavy, and industry-ready) and avoid repeating the same phrasing across sections.",
-      model: DEFAULT_GROQ_MODEL, // ✅ Groq by default
-      temperature: "0.8,1.0",
-      top_p: "0.9,0.97",
-      samples: 2,
-    },
+defaultValues: {
+  title: "",
+  prompt: "",
+  model: DEFAULT_GROQ_MODEL,
+  temperature: "0.6,0.9",
+  top_p: "0.9,0.95",
+  samples: 1,
+},
+
   });
 
   return (

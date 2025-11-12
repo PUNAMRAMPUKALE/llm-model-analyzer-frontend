@@ -241,36 +241,56 @@ export default function ExperimentDetail() {
         </div>
       </div>
 
-      {/* Presets row (Strong turns green when selected) */}
-      <div className="card p-3">
-        <div className="text-sm font-medium mb-2">Parameter presets</div>
-        <div className="flex flex-wrap gap-2">
-          {Object.keys(PRESETS).map((name) => {
-            const isActive = activePreset === name && name !== "Clear override";
-            const base = "px-3 py-1.5 text-sm rounded-md border transition-colors";
-            const active =
-              name === "Strong"
-                ? "bg-emerald-600 text-white border-emerald-500"
-                : "bg-indigo-600 text-white border-indigo-500";
-            const idle =
-              "bg-zinc-900/40 text-zinc-200 border-zinc-700 hover:bg-zinc-800/60";
-            const cls =
-              name === "Clear override"
-                ? "px-3 py-1.5 text-sm rounded-md border border-zinc-700 bg-zinc-900/40 text-zinc-300 hover:bg-zinc-800/60"
-                : `${base} ${isActive ? active : idle}`;
-            return (
-              <button key={name} className={cls} onClick={() => onChoosePreset(name)}>
-                {name}
-              </button>
-            );
-          })}
-        </div>
-        <div className="mt-2 text-xs text-zinc-400">
-          Using override: {gridOverride ? JSON.stringify(gridOverride) : "—"}
-        </div>
-      </div>
+{/* Presets row (stable layout + clear active state) */}
+<div className="card p-3">
+  <div className="text-sm font-medium mb-2">Parameter presets</div>
+  <div className="flex flex-wrap items-center gap-2 min-w-0">
+    {Object.keys(PRESETS).map((name) => {
+      const isActive = activePreset === name && name !== "Clear override";
 
-      {/* Dialer (kept) */}
+      const clsBase =
+        "inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm " +
+        "transition-[color,background,border,transform,box-shadow] will-change-auto select-none " +
+        "focus:outline-none focus:ring-2 focus:ring-indigo-500/50 active:translate-y-px";
+
+      const clsActive =
+        name === "Strong"
+          ? "bg-emerald-600 text-white border-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.25)]"
+          : "bg-indigo-600 text-white border-indigo-500 shadow-[0_0_0_2px_rgba(99,102,241,0.25)]";
+
+      const clsIdle =
+        "bg-zinc-900/40 text-zinc-200 border-zinc-700 hover:bg-zinc-800/60";
+
+      const clsClear =
+        "inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm " +
+        "border border-zinc-700 bg-zinc-900/40 text-zinc-300 hover:bg-zinc-800/60";
+
+      return name === "Clear override" ? (
+        <button
+          key={name}
+          className={clsClear}
+          onClick={() => onChoosePreset(name)}
+          aria-pressed={false}
+        >
+          {name}
+        </button>
+      ) : (
+        <button
+          key={name}
+          className={`${clsBase} ${isActive ? clsActive : clsIdle}`}
+          onClick={() => onChoosePreset(name)}
+          aria-pressed={isActive}
+        >
+          {name}
+        </button>
+      );
+    })}
+  </div>
+  <div className="mt-2 text-xs text-zinc-400">
+    Using override: {gridOverride ? JSON.stringify(gridOverride) : "—"}
+  </div>
+</div>
+
       {/* <ParameterDialer
         experimentId={id}
         initial={exp?.gridSpec as any}

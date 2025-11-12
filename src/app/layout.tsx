@@ -1,7 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import QueryProvider from "@/components/providers/QueryProvider"; // <-- make sure this path is correct
-import "@/app/chart-theme";   // ✅ GLOBAL FIX FOR CHART VISIBILITY
+import QueryProvider from "@/components/providers/QueryProvider";
+import { SiteShell } from "@/components/layout/SiteShell";
 
 export const metadata: Metadata = {
   title: "LLM Model Analyzer",
@@ -12,7 +12,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <SiteShell>{children}</SiteShell>
+        </QueryProvider>
       </body>
     </html>
   );
