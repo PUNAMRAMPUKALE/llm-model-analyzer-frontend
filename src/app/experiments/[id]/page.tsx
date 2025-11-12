@@ -8,19 +8,16 @@ import {
   useMetrics,
   useRunExperiment,
 } from "@/services/api";
-import { ParameterDialer } from "@/components/experiments/ParameterDialer";
 import ResponseGallery from "@/components/responses/ResponseGallery";
 import ExportButtons from "../../exports/ExportButtons";
 import StrongHighlight from "@/components/analysis/StrongHighlight";
 import QualityInspector from "@/components/analysis/QualityInspector";
 import Modal from "@/components/common/Modal";
+import { printElementAsPDF } from "@/lib/print";
 
 /* ----------------------------- small helpers ----------------------------- */
 function shallowMerge<T extends Record<string, any>>(a?: T, b?: T): T {
   return { ...(a ?? {}), ...(b ?? {}) } as T;
-}
-function deepEqual(a: any, b: any) {
-  try { return JSON.stringify(a) === JSON.stringify(b); } catch { return false; }
 }
 
 /* Presets (do not remove seed/other keys unless you set them here) */
@@ -52,60 +49,6 @@ const PRESETS: Record<
   "Clear override": undefined,
 };
 
-/* Print helper: clones dialog content into a print window (Save as PDF) */
-// utils/print.ts (or inline in the page file)
-export function printElementAsPDF(el: HTMLElement | null, title = "Response Details") {
-  if (!el) return;
-
-  // Copy current content (outerHTML preserves basic structure)
-  const contentHTML = el.outerHTML || el.innerHTML || "";
-
-  // Minimal inline styles so content is readable (no Tailwind in new window)
-  const styles = `
-    body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial;
-         background:#fff;color:#111;padding:24px;margin:0;}
-    .card{border:1px solid #e5e7eb;border-radius:8px;padding:12px;}
-    h1,h2,h3{margin:0 0 10px 0}
-    pre{white-space:pre-wrap;word-break:break-word}
-    code{white-space:pre-wrap}
-    table{border-collapse:collapse;width:100%}
-    th,td{border:1px solid #e5e7eb;padding:6px;text-align:left}
-    .muted{color:#555}
-    @media print { .no-print { display:none !important; } }
-  `;
-
-  const html = `
-    <!doctype html>
-    <html>
-      <head>
-        <meta charset="utf-8"/>
-        <meta name="viewport" content="width=device-width, initial-scale=1"/>
-        <title>${title}</title>
-        <style>${styles}</style>
-      </head>
-      <body>
-        ${contentHTML}
-        <script>
-          window.addEventListener('load', function() {
-            // Give layout a tick to settle, then print and close
-            setTimeout(function(){
-              try { window.print(); } catch(e){}
-              setTimeout(function(){ window.close(); }, 300);
-            }, 80);
-          });
-        <\/script>
-      </body>
-    </html>
-  `;
-
-  // Blob → URL avoids document.write race & popup blockers are friendlier
-  const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-  const w = window.open(url, "_blank", "noopener,noreferrer,width=1024,height=768");
-  // If popup blocked, tell the user
-  if (!w) alert("Please allow pop-ups to download the PDF.");
-}
-
 
 /* Find best-fit responseId by highest overallQuality */
 function getBestFitId(metrics: Array<{ responseId: string; overallQuality?: number }>): string | null {
@@ -134,11 +77,6 @@ export default function ExperimentDetail() {
 
   const title = expLoading ? "Loading…" : exp?.title ?? "Experiment";
   const canRun = !!id && !runMut.isPending;
-
-  const handleDialerChange = useCallback((g: any) => {
-    setActivePreset(null);
-    setGridOverride((prev: any) => (deepEqual(prev, g) ? prev : g));
-  }, []);
 
   const onChoosePreset = (name: string) => {
     const preset = PRESETS[name];
@@ -254,9 +192,8 @@ export default function ExperimentDetail() {
         "focus:outline-none focus:ring-2 focus:ring-indigo-500/50 active:translate-y-px";
 
       const clsActive =
-        name === "Strong"
-          ? "bg-emerald-600 text-white border-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.25)]"
-          : "bg-indigo-600 text-white border-indigo-500 shadow-[0_0_0_2px_rgba(99,102,241,0.25)]";
+        "bg-indigo-600 text-white border-indigo-500 shadow-[0_0_0_2px_rgba(99,102,241,0.25)]";
+
 
       const clsIdle =
         "bg-zinc-900/40 text-zinc-200 border-zinc-700 hover:bg-zinc-800/60";

@@ -6,3 +6,6 @@ dist
 .env.local
 *.log
 .vercel
+# lockfiles from other managers
+package-lock.json
+yarn.lock

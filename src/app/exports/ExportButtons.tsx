@@ -4,19 +4,34 @@ import { useMemo } from "react";
 import type { Experiment, ResponseRow, MetricRow } from "@/types/domain";
 
 /* ---------- CSV helper (quotes + newlines safe) ---------- */
-function toCSV(rows: any[]): string {
+function toCSV(rows: Array<Record<string, unknown>>): string {
   if (!rows.length) return "";
-  const headers = Array.from(
-    rows.reduce((s, r) => { Object.keys(r).forEach(k => s.add(k)); return s; }, new Set<string>())
-  );
-  const esc = (x: any) => {
-    const v = typeof x === "string" ? x : JSON.stringify(x ?? "");
-    return `"${String(v).replace(/"/g, '""')}"`;
+
+  // Collect headers across all rows
+  const headerSet = new Set<string>();
+  for (const r of rows) Object.keys(r).forEach(k => headerSet.add(k));
+  const headers: string[] = Array.from(headerSet);
+
+  const esc = (x: unknown) => {
+    const s =
+      x == null
+        ? ""
+        : typeof x === "string"
+        ? x
+        : typeof x === "number" || typeof x === "boolean"
+        ? String(x)
+        : JSON.stringify(x);
+    return `"${s.replace(/"/g, '""')}"`;
   };
-  const lines = [headers.join(",")];
-  for (const row of rows) lines.push(headers.map(h => esc((row as any)[h])).join(","));
+
+  const lines: string[] = [headers.join(",")];
+  for (const row of rows) {
+    const rec = row as Record<string, unknown>;
+    lines.push(headers.map(h => esc(rec[h])).join(","));
+  }
   return lines.join("\n");
 }
+
 
 const toPST = (iso?: string) =>
   iso

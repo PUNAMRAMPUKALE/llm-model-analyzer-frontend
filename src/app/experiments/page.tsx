@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useExperiments } from "@/services/api";
 
 export default function ExperimentsPage() {
