@@ -36,10 +36,10 @@ export function SiteHeader() {
           LLM Lab
         </Link>
         <nav className="text-sm flex items-center gap-2">
-          <NavItem href="/experiments" label="Experiments" disabled={guard} />
-          <NavItem href="/exports" label="Export" disabled={guard} />
+          <NavItem href="/experiments" label="Experiments" />
+          <NavItem href="/exports" label="Export" />
           <NavItem href="/docs" label="Docs" />
-        </nav>
+      </nav>
       </div>
     </header>
   );
