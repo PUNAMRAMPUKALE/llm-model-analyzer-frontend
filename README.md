@@ -1,153 +1,137 @@
-# 🧪 AI Response Quality Analyzer (LLM Lab)
+✅ FINAL FRONTEND README (Next.js App)
+llm-model-analyzer-frontend/README.md
+### 🧪 LLM Lab – AI Response Quality Analyzer (Frontend)
 
-A full-stack web application for analyzing how **large language model (LLM)** parameters affect output quality.  
-It lets users visualize, compare, and export experiments programmatically — providing a polished, demo-ready interface suitable for clients and research presentations.
+This is the Next.js (React + TypeScript) frontend for LLM Lab, a full-stack application that analyzes how LLM parameter settings (temperature, top_p, etc.) influence response quality.
+It offers a polished, interactive UI with experiment execution, detailed output inspection, and rich export options.
 
----
+### 🌐 Overview
 
-## 🌐 Overview
+LLM Lab lets users:
 
-**LLM Lab** enables users to:
-- Enter prompts and parameter ranges (e.g., temperature, top_p).
-- Generate multiple responses using LLM APIs or stored datasets.
-- Automatically evaluate responses with **programmatic quality metrics** such as coherence, completeness, and structure.
-- Compare and visualize the effect of parameter tuning.
-- Export all experiments (input + output) as structured **CSV**, **JSON**, or **PDF** files.
-- Navigate seamlessly with consistent design and “Back to Home” controls.
+Run experiments against an LLM provider or mock generator.
+Explore how parameter sweeps impact output content.
+View metrics for each response (quality, coherence, structure, etc.).
+Identify the Best Fit response automatically.
+Download CSV/JSON/PDF exports per experiment.
+Download a global CSV of all experiments (via Export Center).
+Navigate cleanly using a modern UI with hover effects and PST timestamps.
 
----
+### 🧭 Features
+🔹 Experiments Page
 
-## 🧭 Core Features
+Lists all experiments fetched via GET /experiments.
+Cards show:
+Title
+Model
+Created timestamp (PST, formatted cleanly)
+Responsive grid layout with consistent hover styling.
 
-### 🔹 Experiment Dashboard
-- Lists all experiments with:
-  - **Title**, **Model**, and **Created date/time (PST, AM/PM)**.
-- Each card links to its detailed experiment view.
-- All cards include smooth hover effects and timestamps formatted in PST.
-- Buttons available:
-  - **Export JSON / CSV / PDF** per experiment.
-  - **Back to Home** for easy navigation.
+### 🔹 Experiment Detail Page
 
----
-
-### 🔹 Experiment Detail View
-- Displays experiment configuration:
-  - Full input prompt.
-  - Model name and parameter combinations.
-  - All generated responses.
-  - Calculated metrics per response.
-  - Automatically highlights **Best Fit** (highest quality).
-- Exports include:
-  - Input prompt + parameters.
-  - Full output response text.
-  - Tokens, latency, and metrics.
-  - `isBestFit` flag for the top-scoring response.
+- Per-experiment view includes:
+- Prompt, model, and parameter grid.
+- All generated responses.
+- Response metadata: tokens, latency, params.
+- Metrics: scores + overallQuality.
+- Automatically highlights Best Fit.
 - Export options:
-  - **CSV** — structured table for analysis.
-  - **JSON** — hierarchical data for reimport or auditing.
-  - **PDF** — generated via browser print dialog.
+  1.CSV
+  2.JSON
+  3.PDF (browser print)
 
----
+### 🔹 All Experiments Page
+
+A dedicated page containing only cards, without running logic.
+Mirrors the UI of the Home experiments section.
+Useful for browsing historical experiments without clutter.
 
 ### 🔹 Export Center
-- Dedicated page for **global exports**.
-- “Download All Results CSV”:
-  - Fetches **all experiments**, **responses**, and **metrics** through backend APIs:
-    - `GET /experiments`
-    - `GET /experiments/:id/responses`
-    - `GET /experiments/:id/metrics`
-  - Aggregates every experiment’s input + output + scores into one CSV.
-- CSV columns are identical to single-experiment exports.
-- UTF-8 encoded with multi-line safe quoting.
-- “Back to Home” button styled uniformly (indigo primary).
 
----
+A standalone interface that:
+Fetches all experiments, all responses, all metrics.
+Generates a unified CSV with stable ordered columns:
+- experimentId
+- experimentTitle
+- model
+- experimentCreatedAtPST
+- responseId
+- responseText
+- tokensIn
+- tokensOut
+- latencyMs
+- params
+- scores
+- details
+- overallQuality
+- isBestFit
 
-### 🔹 Documentation Page
-- Explains what the app does and how to use it.
-- Covers:
-  - LLM parameter behavior (temperature, top_p).
-  - Meaning of each metric.
-  - Export structure and analysis use cases.
-  - Architecture summary and data flow.
+CSV is UTF-8 with BOM + safe quoting.
+Handles pagination automatically.
 
----
+### 🔹 Docs Page
 
-## 🧱 Architecture
-
-| Layer | Technology | Purpose |
-|-------|-------------|----------|
-| **Frontend** | **Next.js (React + TypeScript)** | Routing, UI components, and SSR |
-| **State & Data** | **TanStack Query (React Query)** | API fetching and caching |
-| **Styling** | **Tailwind CSS** | Responsive, accessible, modern design |
-| **Backend** | **Node.js + Express (TypeScript)** | REST APIs for experiments, responses, metrics |
-| **Database** | **Prisma ORM + PostgreSQL** | Persistent experiment and metrics storage |
-| **Metrics Engine** | Custom logic | Computes quality scores programmatically |
-| **Deployment** | **Vercel / Render / Railway** | Full-stack hosting with CI/CD |
-
----
-
-## 🔍 API Endpoints
-
-GET /experiments
-GET /experiments/:id
-GET /experiments/:id/responses
-GET /experiments/:id/metrics
-GET /exports/all → returns all experiments, responses, and metrics combined
+Explains:
+What the system does.
+How parameters influence LLM behavior.
+How metrics are computed.
+How exports should be interpreted.
 
 
+### 🧱 Architecture
+Layer	Technology
+Framework	Next.js 14 (App Router)
+UI	Tailwind CSS
+State/Data	TanStack Query (React Query)
+Exports	Client-side CSV/JSON/PDF
+API Communication	REST → Backend Service
+Time Formatting	PST using toLocaleString()
 
-### Experiments
-Environment Variables
-DATABASE_URL=
-API_BASE_URL=http://localhost:3000/api
+### 🔧 Environment Variables
 
-#### 🧠 Data Flow Summary
+Inside .env.local:
 
-Home/Experiments page loads all experiments (/experiments) — cached via React Query.
+NEXT_PUBLIC_API_BASE=https://<backend-service>.onrender.com
 
-Experiment Detail loads responses + metrics (/experiments/:id/...).
+NEXT_PUBLIC_API_BASE must point to your backend.
 
-ExportButtons use the cached data — no repeated calls.
+### ▶️ Running Locally
+pnpm install
+pnpm dev
 
-Export Center fetches all experiments, responses, and metrics dynamically for a unified CSV.
+### App will start on:
 
-Files are generated client-side and downloaded instantly.
+http://localhost:3000
 
+### 📦 Build & Deploy
+ Render
 
+1.Build:
+pnpm run build
 
-###### 📦 Deployment
+2.Start:
+pnpm start
 
-Deployed on Vercel or similar Node hosting.
+Ensure:
+SSR is enabled
 
-Continuous builds from main branch.
+NEXT_PUBLIC_API_BASE is correctly set
+CORS on backend allows your frontend domain
 
-Environment variables managed via dashboard.
+### 📹 Demo Checklist
 
-Fully integrated client + server deployment.
-
-
-#### 📹 Demo Guide
-
-Demonstrate the workflow:
-
-Open app and navigate through experiments.
-
-View outputs and metrics per experiment.
-
-Identify Best Fit response visually.
-
+When demonstrating:
+Load Experiments page → show cards.
+Open a single experiment → show responses + metrics.
+Highlight Best Fit.
 Export CSV/JSON/PDF.
+Open Export Center → download full dataset.
+Visit Docs page to show narrative explanation.
 
-Use Export Center to download all results.
+### 🧾 License
 
-Explore Docs page for parameter insights.
+MIT License.
 
-#### 🧾 License
+### ✨ Credits
 
-MIT License — open for research, demos, and educational use.
-
-#### ✨ Credits
-
-Developed with Proud using Next.js, Tailwind, Prisma, and Express.
-Focused on clarity, reproducibility, and a polished user experience.
+Built using Next.js, Tailwind, TanStack Query, and designed for clarity, analysis, and professional demos.
