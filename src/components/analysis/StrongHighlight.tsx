@@ -1,4 +1,3 @@
-// frontend/src/components/analysis/StrongHighlight.tsx
 "use client";
 
 import React, { useMemo } from "react";
@@ -15,12 +14,14 @@ export default function StrongHighlight({
 }) {
   const best = useMemo(() => {
     if (!metrics?.length) return null;
-    const withQ = [...metrics]
+    const sorted = [...metrics]
       .map(m => ({ m, q: Number(m.overallQuality ?? 0) }))
-      .sort((a, b) => b.q - a.q)[0];
-    if (!withQ) return null;
-    const resp = responses?.find(r => r.id === withQ.m.responseId);
-    return resp ? { resp, m: withQ.m, q: withQ.q } : null;
+      .sort((a, b) => b.q - a.q);
+    const top = sorted[0];
+    if (!top) return null;
+    const resp = responses.find(r => r.id === top.m.responseId);
+    if (!resp) return null;
+    return { resp, m: top.m, q: top.q };
   }, [responses, metrics]);
 
   if (!best) return null;
@@ -34,9 +35,11 @@ export default function StrongHighlight({
         <div className="text-emerald-300 font-semibold">Strong pick</div>
         <div className="text-xs text-emerald-200/80">Overall quality: <b>{pct}%</b></div>
       </div>
+
       <div className="mt-2 text-sm text-zinc-200 line-clamp-3">
         {resp?.text?.slice(0, 320) || "(no preview)"}{resp?.text && resp.text.length > 320 ? "…" : ""}
       </div>
+
       <div className="mt-3 flex flex-wrap gap-2 text-xs">
         {Object.entries((m?.scores ?? {}) as Record<string, number>).map(([k, v]) => (
           <span key={k} className="rounded border border-emerald-700/40 bg-emerald-950/40 px-2 py-0.5">
@@ -44,6 +47,7 @@ export default function StrongHighlight({
           </span>
         ))}
       </div>
+
       <div className="mt-3">
         <button
           className="text-xs rounded-md bg-emerald-600 hover:bg-emerald-500 px-3 py-1 text-white"

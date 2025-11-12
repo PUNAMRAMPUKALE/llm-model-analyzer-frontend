@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import QueryProvider from "@/components/providers/QueryProvider"; // <-- make sure this path is correct
+import "@/app/chart-theme";   // ✅ GLOBAL FIX FOR CHART VISIBILITY
 
 export const metadata: Metadata = {
   title: "LLM Model Analyzer",
