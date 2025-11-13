@@ -14,7 +14,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <div className="container-page">
           <div className="mb-2 text-mute">© {new Date().getFullYear()} LLM Model Analyzer</div>
           <div className="text-zinc-300">
-            Built with Next.js, TanStack Query, Tailwind, and Recharts. Theme accents:
+            Built with Next.js, TanStack Query, and Tailwind. Theme accents:
             <span className="ml-1 inline-flex items-center gap-2">
               <i className="inline-block h-2 w-2 rounded-full bg-accent" /> blue
               <i className="inline-block h-2 w-2 rounded-full bg-[--accent-2] bg-[color:var(--tw-prose-body,#a06bff)]" />
