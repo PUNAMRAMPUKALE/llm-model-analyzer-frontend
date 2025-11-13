@@ -32,7 +32,6 @@ export default function Home() {
           <div className="flex gap-3 text-sm">
             <span className="token">Next.js 15</span>
             <span className="token">TanStack Query</span>
-            <span className="token">Recharts</span>
           </div>
         </div>
 
