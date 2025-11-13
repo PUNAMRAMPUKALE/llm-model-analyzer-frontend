@@ -12,7 +12,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <main className="flex-1">{children}</main>
       <footer className="border-t border-stroke/60 text-xs p-6 text-center">
         <div className="container-page">
-          <div className="mb-2 text-mute">© {new Date().getFullYear()} LLM Lab</div>
+          <div className="mb-2 text-mute">© {new Date().getFullYear()} LLM Model Analyzer</div>
           <div className="text-zinc-300">
             Built with Next.js, TanStack Query, Tailwind, and Recharts. Theme accents:
             <span className="ml-1 inline-flex items-center gap-2">

@@ -33,7 +33,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-stroke/60 bg-[linear-gradient(180deg,rgba(12,14,20,0.8),rgba(12,14,20,0.6))] backdrop-blur">
       <div className="container-page py-3 flex items-center justify-between gap-6">
         <Link href="/" className="text-lg font-semibold hover:opacity-90">
-          LLM Lab
+          LLM Model Analyzer
         </Link>
         <nav className="text-sm flex items-center gap-2">
           <NavItem href="/experiments" label="Experiments" />
